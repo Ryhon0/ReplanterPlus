@@ -9,10 +9,10 @@
     "AreUThreateningMe"
   ],
   "contact": {
-    "homepage": "https://github.com/Ryhon0/Replanter",
-    "sources": "https://github.com/Ryhon0/Replanter"
+    "homepage": "https://github.com/Ryhon0/ReplanterPlus",
+    "sources": "https://github.com/Ryhon0/ReplanterPlus"
   },
-  "license": "MIT",
+  "license": "GPL-3.0",
   "icon": "assets/replanter/replanter.png",
   "environment": "client",
   "entrypoints": {
