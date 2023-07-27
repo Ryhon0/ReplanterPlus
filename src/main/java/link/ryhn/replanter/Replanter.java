@@ -1,10 +1,12 @@
 package link.ryhn.replanter;
 
+import link.ryhn.replanter.mixins.PitcherCropBlockMixin;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
@@ -12,10 +14,10 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
 public class Replanter implements ModInitializer {
-
 	private static final MinecraftClient mc = MinecraftClient.getInstance();
 
 	@Override
@@ -27,16 +29,16 @@ public class Replanter implements ModInitializer {
 				ItemStack offhandStack = player.getOffHandStack();
 
 				if (hand == Hand.MAIN_HAND && !heldStack.isEmpty()) {
-					this.replaceCrop(heldStack, pos, world);
+					this.replaceCrop(player, hand, heldStack, pos, world);
 				} else if (hand == Hand.OFF_HAND && !offhandStack.isEmpty()) {
-					this.replaceCrop(offhandStack, pos, world);
+					this.replaceCrop(player, hand, offhandStack, pos, world);
 				}
 			}
 			return ActionResult.PASS;
 		});
 	}
 
-	private void replaceCrop(ItemStack stack, BlockPos pos, World world) {
+	private void replaceCrop(PlayerEntity player, Hand hand, ItemStack stack, BlockPos pos, World world) {
 		BlockState state = world.getBlockState(pos);
 		Block block = state.getBlock();
 		ClientPlayerInteractionManager im = mc.interactionManager;
@@ -60,9 +62,16 @@ public class Replanter implements ModInitializer {
 					im.attackBlock(pos, Direction.DOWN);
 				}
 			} else if (block instanceof CocoaBlock cocoaBlock) {
-				if ((cocoaBlock.getOutlineShape(state, world, pos, ShapeContext.absent()).getBoundingBox().getYLength() == 0.5625)) {
+				if ((cocoaBlock.getOutlineShape(state, world, pos, ShapeContext.absent()).getBoundingBox()
+						.getYLength() == 0.5625)) {
 					im.attackBlock(pos, world.getBlockState(pos).get(CocoaBlock.FACING));
 				}
+			} else if (block instanceof PitcherCropBlock pitcherCropBlock) {
+				if (PitcherCropBlockMixin.invokeIsLowerHalf(state))
+					if (((PitcherCropBlockMixin) pitcherCropBlock).invokeIsFullyGrown(state))
+						im.attackBlock(pos, Direction.DOWN);
+			} else if (block == Blocks.TORCHFLOWER) {
+				im.attackBlock(pos, Direction.DOWN);
 			}
 		}
 	}
