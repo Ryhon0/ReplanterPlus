@@ -1,22 +1,23 @@
 {
   "schemaVersion": 1,
-  "id": "replanter",
-  "version": "1.3",
-  "name": "Replanter",
-  "description": "Replanter is a client side mod that allows players to right click on crops to harvest and replant them.",
+  "id": "replanter-plus",
+  "version": "1.0",
+  "name": "Replanter Plus",
+  "description": "Replanter Plus is a client side mod that allows players to right click on crops to harvest and replant them.",
   "authors": [
+    "Ryhon",
     "AreUThreateningMe"
   ],
   "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/replanter",
-    "sources": "https://github.com/kregerl/Replanter"
+    "homepage": "https://github.com/Ryhon0/Replanter",
+    "sources": "https://github.com/Ryhon0/Replanter"
   },
   "license": "MIT",
   "icon": "assets/replanter/replanter.png",
   "environment": "client",
   "entrypoints": {
     "main": [
-      "com.loucaskreger.replanter.Replanter"
+      "link.ryhn.replanter.Replanter"
     ]
   },
   "depends": {

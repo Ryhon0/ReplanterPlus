@@ -1,4 +1,4 @@
-package com.loucaskreger.replanter;
+package link.ryhn.replanter;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
