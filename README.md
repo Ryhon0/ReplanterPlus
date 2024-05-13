@@ -2,7 +2,7 @@
 
 # Replanter Plus
 
-Replanter Plus is a fork of the [Replanter mod](https://github.com/kregerl/Replanter) by kregerl that adds additional features and support for newer versions.
+Replanter Plus is client-side only mod for harvesting and replanting crops by holding right click.
 
 ## Building
 Make sure you have OpenJDK JRE 17 installed.  

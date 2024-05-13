@@ -1,33 +1,32 @@
 {
-  "schemaVersion": 1,
-  "id": "replanter-plus",
-  "version": "1.0",
-  "name": "Replanter Plus",
-  "description": "Replanter Plus is a client side mod that allows players to right click on crops to harvest and replant them.",
-  "authors": [
-    "Ryhon",
-    "AreUThreateningMe"
-  ],
-  "contact": {
-    "homepage": "https://github.com/Ryhon0/ReplanterPlus",
-    "sources": "https://github.com/Ryhon0/ReplanterPlus"
-  },
-  "license": "GPL-3.0",
-  "icon": "assets/replanter/replanter.png",
-  "environment": "client",
-  "entrypoints": {
-    "main": [
-      "link.ryhn.replanter.Replanter"
-    ]
-  },
-  "depends": {
-    "fabricloader": ">=0.14.6",
-    "fabric": "*",
-    "minecraft": "~1.20",
-    "java": ">=17"
-  },
-  "mixins":
-  [
-    "replanter.mixins.json"
-  ]
+	"schemaVersion": 1,
+	"id": "replanter-plus",
+	"version": "${version}",
+	"name": "Replanter Plus",
+	"description": "Client-side mod for harvesting and replanting crops by holding right click.",
+	"authors": [
+		"Ryhon"
+	],
+	"contact": {
+		"homepage": "https://ryhon.xyz/",
+		"sources": "https://github.com/Ryhon0/ReplanterPlus"
+	},
+	"license": "GPL-3.0",
+	"icon": "assets/replanter-plus/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"main": [
+			"xyz.ryhon.replanterplus.ReplanterPlus"
+		]
+	},
+	"accessWidener": "replanter.accesswidener",
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": "~1.20.2",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
 }
