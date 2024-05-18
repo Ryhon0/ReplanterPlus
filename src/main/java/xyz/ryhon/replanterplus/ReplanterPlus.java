@@ -4,32 +4,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.TextCollector;
-import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3i;
 
 public class ReplanterPlus implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("Replanter");
@@ -45,11 +38,23 @@ public class ReplanterPlus implements ModInitializer {
 			ClientPlayerEntity p = (ClientPlayerEntity) player;
 			BlockState state = world.getBlockState(hitResult.getBlockPos());
 
-			if (isCrop(state)) {
+			if (state.getBlock() instanceof CocoaBlock cb) {
+				if (!cb.isFertilizable(world, hitResult.getBlockPos(), state)) {
+					breakAndReplantCocoa(p, state, hitResult);
+					return ActionResult.SUCCESS;
+				} else {
+					if (findAndEquipSeed(player, Items.BONE_MEAL)) {
+						useIgnore = true;
+						mc.interactionManager.interactBlock(p, Hand.OFF_HAND, hitResult);
+						useIgnore = false;
+						return ActionResult.SUCCESS;
+					}
+				}
+			} else if (isCrop(state)) {
 				if (isGrown(state)) {
 					breakAndReplant(p, hitResult);
 					return ActionResult.SUCCESS;
-				} else if (fndAndEquipSeed(player, Items.BONE_MEAL)) {
+				} else if (findAndEquipSeed(player, Items.BONE_MEAL)) {
 					useIgnore = true;
 					mc.interactionManager.interactBlock(p, Hand.OFF_HAND, hitResult);
 					useIgnore = false;
@@ -59,6 +64,23 @@ public class ReplanterPlus implements ModInitializer {
 
 			return ActionResult.PASS;
 		});
+	}
+
+	Boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
+		if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f)
+			return true;
+
+		int currentSlot = p.getInventory().selectedSlot;
+		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
+			p.getInventory().selectedSlot = i;
+			if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f) {
+				mc.interactionManager.syncSelectedSlot();
+				return true;
+			}
+		}
+		p.getInventory().selectedSlot = currentSlot;
+
+		return false;
 	}
 
 	Boolean isCrop(BlockState state) {
@@ -99,7 +121,7 @@ public class ReplanterPlus implements ModInitializer {
 		holdFortuneItem(player);
 		mc.interactionManager.attackBlock(hit.getBlockPos(), hit.getSide());
 
-		if (fndAndEquipSeed(player, seed)) {
+		if (findAndEquipSeed(player, seed)) {
 			mc.interactionManager.interactBlock(player, Hand.OFF_HAND, hit.withBlockPos(
 					hit.getBlockPos()));
 		} else {
@@ -111,6 +133,33 @@ public class ReplanterPlus implements ModInitializer {
 		}
 
 		useIgnore = false;
+	}
+
+	void breakAndReplantCocoa(ClientPlayerEntity p, BlockState state, BlockHitResult hitResult) {
+		if (findInstamineTool(p, state, hitResult.getBlockPos())) {
+			mc.interactionManager.attackBlock(hitResult.getBlockPos(), hitResult.getSide());
+			if (findAndEquipSeed(p, state.getBlock().asItem())) {
+				Direction dir = (Direction) state.get(CocoaBlock.FACING);
+
+				float x, y, z;
+				x = dir.getOffsetX();
+				y = dir.getOffsetY();
+				z = dir.getOffsetZ();
+				BlockHitResult placeHit = BlockHitResult.createMissed(
+						hitResult.getPos().add(x, y, z), dir.getOpposite(),
+						hitResult.getBlockPos().add(dir.getVector()));
+
+				useIgnore = true;
+				mc.interactionManager.interactBlock(p, Hand.OFF_HAND, placeHit);
+				useIgnore = false;
+			} else {
+				p.sendMessage(
+						Text.translatable(state.getBlock().asItem().getTranslationKey())
+								.append(Text.translatable("replanter.gui.seed_not_found"))
+								.setStyle(Style.EMPTY.withColor(0xFF0000)),
+						true);
+			}
+		}
 	}
 
 	Item getSeed(Block block) {
@@ -127,7 +176,7 @@ public class ReplanterPlus implements ModInitializer {
 		return null;
 	}
 
-	boolean fndAndEquipSeed(PlayerEntity p, Item item) {
+	boolean findAndEquipSeed(PlayerEntity p, Item item) {
 		if (item == null)
 			return false;
 
@@ -151,7 +200,7 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
-		for (int i = 0; i < pi.getHotbarSize(); i++) {
+		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
 			int lvl = EnchantmentHelper.getLevel(Enchantments.FORTUNE, pi.getStack(i));
 			if (lvl > maxLevel) {
 				maxLevel = lvl;
