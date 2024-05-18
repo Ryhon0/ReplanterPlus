@@ -9,7 +9,8 @@
 	],
 	"contact": {
 		"homepage": "https://ryhon.xyz/",
-		"sources": "https://github.com/Ryhon0/ReplanterPlus"
+		"sources": "https://github.com/Ryhon0/ReplanterPlus",
+		"issues": "https://github.com/Ryhon0/ReplanterPlus/issues"
 	},
 	"license": "GPL-3.0",
 	"icon": "assets/replanter-plus/icon.png",
@@ -26,7 +27,17 @@
 		"java": ">=17",
 		"fabric-api": "*"
 	},
-	"suggests": {
-		"another-mod": "*"
+	"custom":
+	{
+		"modmenu":
+		{
+			"links":
+			{
+				"modmenu.donate": "https://github.com/sponsors/Ryhon0",
+				"modmenu.modrinth": "https://modrinth.com/mod/replanter-plus",
+				"modmenu.github_releases": "https://github.com/Ryhon0/ReplanterPlus/releases",
+				"modmenu.twitter": "https://twitter.com/RyhonDev"
+			}
+		}
 	}
 }
