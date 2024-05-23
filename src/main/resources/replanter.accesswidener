@@ -3,3 +3,5 @@ accessWidener v2 named
 accessible    method    net/minecraft/block/PitcherCropBlock    isFullyGrown    (Lnet/minecraft/block/BlockState;)Z
 accessible    method    net/minecraft/block/PitcherCropBlock    isLowerHalf    (Lnet/minecraft/block/BlockState;)Z
 accessible    method    net/minecraft/client/network/ClientPlayerInteractionManager    syncSelectedSlot    ()V
+accessible    field    net/minecraft/client/MinecraftClient    itemUseCooldown    I
+accessible    method    net/minecraft/client/gui/widget/SliderWidget    setValue    (D)V

@@ -1,4 +1,13 @@
 {
+	"modmenu.descriptionTranslation.replanter-plus": "Modyfikacja klienta umożliwiająca zbieranie plonów oraz sadzenie nasion poprzez trzymanie prawego przycisku myszy.",
+	"category.replanter": "Replanter Plus",
+	"key.replanter.menu": "Otwórz ekran konfiguracji",
+	"key.replanter.toggle": "Przełącz Replanter Plus",
 	"replanter.gui.seed_not_found": ": przedmiot nie w hotbarze",
-	"modmenu.descriptionTranslation.replanter-plus": "Modyfikacja klienta umożliwiająca zbieranie plonów oraz sadzenie nasion poprzez trzymanie prawego przycisku myszy."
+	"replanter.configscreen.enabled": "Włączony",
+	"replanter.configscreen.sneakToggle": "Wyłącz podczas skradania",
+	"replanter.configscreen.tickDelay": "Opóźnienie użycia",
+	"replanter.configscreen.done": "Gotowe",
+	"replanter.switchbutton.label.on": "wł.",
+	"replanter.switchbutton.label.off": "wył."
 }

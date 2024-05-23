@@ -1,13 +1,27 @@
 package xyz.ryhon.replanterplus;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,10 +43,44 @@ public class ReplanterPlus implements ModInitializer {
 	private static final MinecraftClient mc = MinecraftClient.getInstance();
 	static Boolean useIgnore = false;
 
+	public static Boolean enabled = true;
+	public static Boolean sneakToggle = true;
+	public static int useDelay = 4;
+
+	int ticks = 0;
+	final int autoSaveTicks = 20 * 60 * 3;
+
 	@Override
 	public void onInitialize() {
+		loadConfig();
+		
+		String bindCategory = "category.replanter";
+		KeyBinding menuBind = new KeyBinding("key.replanter.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
+				bindCategory);
+		KeyBindingHelper.registerKeyBinding(menuBind);
+		KeyBinding toggleBind = new KeyBinding("key.replanter.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
+				bindCategory);
+		KeyBindingHelper.registerKeyBinding(toggleBind);
+
+		ClientTickEvents.END_CLIENT_TICK.register((client) -> {
+			ticks++;
+			if (ticks == autoSaveTicks) {
+				ticks = 0;
+				saveConfig();
+			}
+
+			if (menuBind.wasPressed())
+				client.setScreen(new ConfigScreen(null));
+
+			if (toggleBind.wasPressed())
+				enabled = !enabled;
+		});
+
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-			if (player instanceof ServerPlayerEntity || useIgnore || player.isSneaking())
+			if (player instanceof ServerPlayerEntity || useIgnore)
+				return ActionResult.PASS;
+
+			if (!enabled || (sneakToggle && player.isSneaking()))
 				return ActionResult.PASS;
 
 			ClientPlayerEntity p = (ClientPlayerEntity) player;
@@ -122,8 +170,11 @@ public class ReplanterPlus implements ModInitializer {
 		mc.interactionManager.attackBlock(hit.getBlockPos(), hit.getSide());
 
 		if (findAndEquipSeed(player, seed)) {
+			useIgnore = true;
 			mc.interactionManager.interactBlock(player, Hand.OFF_HAND, hit.withBlockPos(
 					hit.getBlockPos()));
+			useIgnore = false;
+			mc.itemUseCooldown = useDelay;
 		} else {
 			player.sendMessage(
 					Text.translatable(seed.getTranslationKey())
@@ -152,6 +203,7 @@ public class ReplanterPlus implements ModInitializer {
 				useIgnore = true;
 				mc.interactionManager.interactBlock(p, Hand.OFF_HAND, placeHit);
 				useIgnore = false;
+				mc.itemUseCooldown = useDelay;
 			} else {
 				p.sendMessage(
 						Text.translatable(state.getBlock().asItem().getTranslationKey())
@@ -211,6 +263,45 @@ public class ReplanterPlus implements ModInitializer {
 		if (slot != -1) {
 			pi.selectedSlot = slot;
 			mc.interactionManager.syncSelectedSlot();
+		}
+	}
+
+	static Path configDir = FabricLoader.getInstance().getConfigDir().resolve("replanterplus");
+	static Path configFile = configDir.resolve("config.json");
+
+	static void loadConfig() {
+		try {
+			Files.createDirectories(configDir);
+			if (!Files.exists(configFile))
+				return;
+
+			String str = Files.readString(configFile);
+			JsonObject jo = (JsonObject) JsonParser.parseString(str);
+
+			if (jo.has("enabled"))
+				enabled = jo.get("enabled").getAsBoolean();
+			if (jo.has("sneakToggle"))
+				sneakToggle = jo.get("sneakToggle").getAsBoolean();
+			if (jo.has("useDelay"))
+				useDelay = jo.get("useDelay").getAsInt();
+
+		} catch (Exception e) {
+			LOGGER.error("Failed to load config", e);
+		}
+	}
+
+	static void saveConfig() {
+		JsonObject jo = new JsonObject();
+
+		jo.add("enabled", new JsonPrimitive(enabled));
+		jo.add("sneakToggle", new JsonPrimitive(sneakToggle));
+		jo.add("useDelay", new JsonPrimitive(useDelay));
+
+		try {
+			Files.createDirectories(configDir);
+			Files.writeString(configFile, new Gson().toJson(jo));
+		} catch (Exception e) {
+			LOGGER.error("Failed to save config", e);
 		}
 	}
 }

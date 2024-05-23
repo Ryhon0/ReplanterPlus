@@ -1,3 +1,12 @@
 {
-	"replanter.gui.seed_not_found": ": item not in hotbar"
+	"category.replanter": "Replanter Plus",
+	"key.replanter.menu": "Open Config Scren",
+	"key.replanter.toggle": "Toggle Replanter",
+	"replanter.gui.seed_not_found": ": item not in hotbar",
+	"replanter.configscreen.enabled": "Enabled",
+	"replanter.configscreen.sneakToggle": "Disable When Sneaking",
+	"replanter.configscreen.tickDelay": "Item Use Delay",
+	"replanter.configscreen.done": "Done",
+	"replanter.switchbutton.label.on": "on",
+	"replanter.switchbutton.label.off": "off"
 }
