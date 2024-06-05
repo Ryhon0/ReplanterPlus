@@ -146,8 +146,8 @@ public class ConfigScreen extends Screen {
 		}
 
 		@Override
-		public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-			super.render(context, mouseX, mouseY, delta);
+		public void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
+			super.renderButton(context, mouseX, mouseY, delta);
 			context.drawCenteredTextWithShadow(textRenderer,
 					Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
 					getX() + (width / 2), getY() + (height / 2) - (textRenderer.fontHeight / 2),
