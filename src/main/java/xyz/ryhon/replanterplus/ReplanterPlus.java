@@ -2,6 +2,7 @@ package xyz.ryhon.replanterplus;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,6 +31,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -252,8 +256,12 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
+		Optional<RegistryEntry.Reference<Enchantment>> fortune = p.getWorld().getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.FORTUNE);
+		// Server removed the Fortune enchantment????
+		if(!fortune.isPresent()) return;
+		
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
-			int lvl = EnchantmentHelper.getLevel(Enchantments.FORTUNE, pi.getStack(i));
+			int lvl = EnchantmentHelper.getLevel(fortune.get(), pi.getStack(i));
 			if (lvl > maxLevel) {
 				maxLevel = lvl;
 				slot = i;

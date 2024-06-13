@@ -128,8 +128,8 @@ public class ConfigScreen extends Screen {
 	}
 
 	public class SwitchButton extends ToggleButtonWidget {
-		private static final ButtonTextures TEXTURES = new ButtonTextures(new Identifier("widget/button"),
-				new Identifier("widget/button"), new Identifier("widget/button_highlighted"));
+		private static final ButtonTextures TEXTURES = new ButtonTextures(Identifier.of("widget/button"),
+				Identifier.of("widget/button"), Identifier.of("widget/button_highlighted"));
 
 		public SwitchButton(int x, int y, int width, int height, boolean toggled) {
 			super(x, y, width, height, toggled);
@@ -146,8 +146,8 @@ public class ConfigScreen extends Screen {
 		}
 
 		@Override
-		public void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
-			super.renderButton(context, mouseX, mouseY, delta);
+		public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+			super.renderWidget(context, mouseX, mouseY, delta);
 			context.drawCenteredTextWithShadow(textRenderer,
 					Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
 					getX() + (width / 2), getY() + (height / 2) - (textRenderer.fontHeight / 2),
