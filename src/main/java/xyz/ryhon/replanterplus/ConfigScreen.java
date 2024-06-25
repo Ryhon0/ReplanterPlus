@@ -17,6 +17,9 @@ public class ConfigScreen extends Screen {
 
 	SwitchButton enabledButton;
 	SwitchButton sneakToggleButton;
+	SwitchButton missingItemNotificationsButton;
+	SwitchButton autoSwitchButton;
+	SwitchButton requireSeedHeldButton;
 	SimpleSlider tickDelaySlider;
 	ButtonWidget doneButton;
 
@@ -34,7 +37,7 @@ public class ConfigScreen extends Screen {
 		int panelWidth = 256;
 
 		enabledButton = new SwitchButton(
-				(width / 2) + (panelWidth / 2) - (buttonWidth), (height / 2) - (buttonHeight * 2),
+				(width / 2) + (panelWidth / 2) - (buttonWidth), (height / 2) - (buttonHeight * 4),
 				buttonWidth, buttonHeight, ReplanterPlus.enabled) {
 			@Override
 			public void setToggled(boolean toggled) {
@@ -63,12 +66,65 @@ public class ConfigScreen extends Screen {
 		addSelectableChild(sneakToggleButton);
 		t = new TextWidget(Text.translatable("replanter.configscreen.sneakToggle"), textRenderer);
 		t.setPosition((width / 2) - (panelWidth / 2),
-			sneakToggleButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
+				sneakToggleButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
+		addDrawableChild(t);
+
+		missingItemNotificationsButton = new SwitchButton(
+				sneakToggleButton.getX(), sneakToggleButton.getY() + sneakToggleButton.getHeight(),
+				sneakToggleButton.getWidth(), sneakToggleButton.getHeight(),
+				ReplanterPlus.missingItemNotifications) {
+			@Override
+			public void setToggled(boolean toggled) {
+				super.setToggled(toggled);
+				ReplanterPlus.missingItemNotifications = toggled;
+			}
+		};
+		addDrawableChild(missingItemNotificationsButton);
+		addSelectableChild(missingItemNotificationsButton);
+		t = new TextWidget(Text.translatable("replanter.configscreen.missingItemNotifications"), textRenderer);
+		t.setPosition((width / 2) - (panelWidth / 2),
+				missingItemNotificationsButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
+		addDrawableChild(t);
+
+		autoSwitchButton = new SwitchButton(
+				missingItemNotificationsButton.getX(),
+				missingItemNotificationsButton.getY() + missingItemNotificationsButton.getHeight(),
+				missingItemNotificationsButton.getWidth(), missingItemNotificationsButton.getHeight(),
+				ReplanterPlus.autoSwitch) {
+			@Override
+			public void setToggled(boolean toggled) {
+				super.setToggled(toggled);
+				ReplanterPlus.autoSwitch = toggled;
+			}
+		};
+		addDrawableChild(autoSwitchButton);
+		addSelectableChild(autoSwitchButton);
+		t = new TextWidget(Text.translatable("replanter.configscreen.autoSwitch"), textRenderer);
+		t.setPosition((width / 2) - (panelWidth / 2),
+				autoSwitchButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
+		addDrawableChild(t);
+
+		requireSeedHeldButton = new SwitchButton(
+				autoSwitchButton.getX(),
+				autoSwitchButton.getY() + autoSwitchButton.getHeight(),
+				autoSwitchButton.getWidth(), autoSwitchButton.getHeight(),
+				ReplanterPlus.requireSeedHeld) {
+			@Override
+			public void setToggled(boolean toggled) {
+				super.setToggled(toggled);
+				ReplanterPlus.requireSeedHeld = toggled;
+			}
+		};
+		addDrawableChild(requireSeedHeldButton);
+		addSelectableChild(requireSeedHeldButton);
+		t = new TextWidget(Text.translatable("replanter.configscreen.requireSeedHeld"), textRenderer);
+		t.setPosition((width / 2) - (panelWidth / 2),
+				requireSeedHeldButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
 		addDrawableChild(t);
 
 		t = new TextWidget(Text.translatable("replanter.configscreen.tickDelay"), textRenderer);
 		t.setPosition((width / 2) - (panelWidth / 2),
-			sneakToggleButton.getY() + buttonHeight);
+				requireSeedHeldButton.getY() + buttonHeight);
 		addDrawableChild(t);
 
 		tickDelaySlider = new SimpleSlider(0, 8);
@@ -76,10 +132,9 @@ public class ConfigScreen extends Screen {
 		tickDelaySlider.setWidth(panelWidth);
 		tickDelaySlider.setHeight(24);
 		tickDelaySlider.setIValue(ReplanterPlus.useDelay);
-		tickDelaySlider.onValue = (Long l) -> 
-		{
+		tickDelaySlider.onValue = (Long l) -> {
 			long i = l;
-			ReplanterPlus.useDelay = (int)i;
+			ReplanterPlus.useDelay = (int) i;
 		};
 		addDrawableChild(tickDelaySlider);
 		addSelectableChild(tickDelaySlider);

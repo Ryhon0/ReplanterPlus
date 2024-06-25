@@ -50,6 +50,9 @@ public class ReplanterPlus implements ModInitializer {
 	public static Boolean enabled = true;
 	public static Boolean sneakToggle = true;
 	public static int useDelay = 4;
+	public static Boolean missingItemNotifications = true;
+	public static Boolean autoSwitch = true;
+	public static Boolean requireSeedHeld = false;
 
 	int ticks = 0;
 	final int autoSaveTicks = 20 * 60 * 3;
@@ -57,7 +60,7 @@ public class ReplanterPlus implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		loadConfig();
-		
+
 		String bindCategory = "category.replanter";
 		KeyBinding menuBind = new KeyBinding("key.replanter.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
 				bindCategory);
@@ -95,9 +98,10 @@ public class ReplanterPlus implements ModInitializer {
 					breakAndReplantCocoa(p, state, hitResult);
 					return ActionResult.SUCCESS;
 				} else {
-					if (findAndEquipSeed(player, Items.BONE_MEAL)) {
+					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
+					if (h != null) {
 						useIgnore = true;
-						mc.interactionManager.interactBlock(p, Hand.OFF_HAND, hitResult);
+						mc.interactionManager.interactBlock(p, h, hitResult);
 						useIgnore = false;
 						return ActionResult.SUCCESS;
 					}
@@ -106,11 +110,14 @@ public class ReplanterPlus implements ModInitializer {
 				if (isGrown(state)) {
 					breakAndReplant(p, hitResult);
 					return ActionResult.SUCCESS;
-				} else if (findAndEquipSeed(player, Items.BONE_MEAL)) {
-					useIgnore = true;
-					mc.interactionManager.interactBlock(p, Hand.OFF_HAND, hitResult);
-					useIgnore = false;
-					return ActionResult.SUCCESS;
+				} else {
+					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
+					if (h != null) {
+						useIgnore = true;
+						mc.interactionManager.interactBlock(p, h, hitResult);
+						useIgnore = false;
+						return ActionResult.SUCCESS;
+					}
 				}
 			}
 
@@ -121,6 +128,9 @@ public class ReplanterPlus implements ModInitializer {
 	Boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
 		if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f)
 			return true;
+
+		if (!autoSwitch)
+			return false;
 
 		int currentSlot = p.getInventory().selectedSlot;
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
@@ -166,34 +176,38 @@ public class ReplanterPlus implements ModInitializer {
 	}
 
 	void breakAndReplant(ClientPlayerEntity player, BlockHitResult hit) {
-		useIgnore = true;
-
 		Item seed = getSeed(player.getWorld().getBlockState(hit.getBlockPos()).getBlock());
+		Hand h = findAndEquipSeed(player, seed);
+		if (requireSeedHeld && h == null) {
+			sendMissingItemMessage(player, seed);
+			return;
+		}
 
 		holdFortuneItem(player);
 		mc.interactionManager.attackBlock(hit.getBlockPos(), hit.getSide());
 
-		if (findAndEquipSeed(player, seed)) {
+		if (h != null) {
 			useIgnore = true;
-			mc.interactionManager.interactBlock(player, Hand.OFF_HAND, hit.withBlockPos(
+			mc.interactionManager.interactBlock(player, h, hit.withBlockPos(
 					hit.getBlockPos()));
 			useIgnore = false;
-			mc.itemUseCooldown = useDelay;
-		} else {
-			player.sendMessage(
-					Text.translatable(seed.getTranslationKey())
-							.append(Text.translatable("replanter.gui.seed_not_found"))
-							.setStyle(Style.EMPTY.withColor(0xFF0000)),
-					true);
-		}
-
-		useIgnore = false;
+		} else
+			sendMissingItemMessage(player, seed);
+		mc.itemUseCooldown = useDelay;
 	}
 
 	void breakAndReplantCocoa(ClientPlayerEntity p, BlockState state, BlockHitResult hitResult) {
 		if (findInstamineTool(p, state, hitResult.getBlockPos())) {
+			Item seed = state.getBlock().asItem();
+			Hand h = findAndEquipSeed(p, seed);
+
+			if (requireSeedHeld && h == null) {
+				sendMissingItemMessage(p, seed);
+				return;
+			}
+
 			mc.interactionManager.attackBlock(hitResult.getBlockPos(), hitResult.getSide());
-			if (findAndEquipSeed(p, state.getBlock().asItem())) {
+			if (h != null) {
 				Direction dir = (Direction) state.get(CocoaBlock.FACING);
 
 				float x, y, z;
@@ -205,16 +219,11 @@ public class ReplanterPlus implements ModInitializer {
 						hitResult.getBlockPos().add(dir.getVector()));
 
 				useIgnore = true;
-				mc.interactionManager.interactBlock(p, Hand.OFF_HAND, placeHit);
+				mc.interactionManager.interactBlock(p, h, placeHit);
 				useIgnore = false;
-				mc.itemUseCooldown = useDelay;
-			} else {
-				p.sendMessage(
-						Text.translatable(state.getBlock().asItem().getTranslationKey())
-								.append(Text.translatable("replanter.gui.seed_not_found"))
-								.setStyle(Style.EMPTY.withColor(0xFF0000)),
-						true);
-			}
+			} else
+				sendMissingItemMessage(p, seed);
+			mc.itemUseCooldown = useDelay;
 		}
 	}
 
@@ -232,23 +241,29 @@ public class ReplanterPlus implements ModInitializer {
 		return null;
 	}
 
-	boolean findAndEquipSeed(PlayerEntity p, Item item) {
+	Hand findAndEquipSeed(PlayerEntity p, Item item) {
 		if (item == null)
-			return false;
+			return null;
 
 		PlayerInventory pi = p.getInventory();
+		if (pi.getStack(pi.selectedSlot).isOf(item))
+			return Hand.MAIN_HAND;
 		if (pi.getStack(PlayerInventory.OFF_HAND_SLOT).isOf(item))
-			return true;
+			return Hand.OFF_HAND;
+
+		if (!autoSwitch)
+			return null;
+
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
 			if (pi.getStack(i).isOf(item)) {
 				pi.selectedSlot = i;
 				mc.interactionManager.syncSelectedSlot();
 				mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(
 						PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
-				return true;
+				return Hand.OFF_HAND;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	void holdFortuneItem(PlayerEntity p) {
@@ -256,10 +271,12 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
-		Optional<RegistryEntry.Reference<Enchantment>> fortune = p.getWorld().getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.FORTUNE);
+		Optional<RegistryEntry.Reference<Enchantment>> fortune = p.getWorld().getRegistryManager()
+				.get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.FORTUNE);
 		// Server removed the Fortune enchantment????
-		if(!fortune.isPresent()) return;
-		
+		if (!fortune.isPresent())
+			return;
+
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
 			int lvl = EnchantmentHelper.getLevel(fortune.get(), pi.getStack(i));
 			if (lvl > maxLevel) {
@@ -272,6 +289,16 @@ public class ReplanterPlus implements ModInitializer {
 			pi.selectedSlot = slot;
 			mc.interactionManager.syncSelectedSlot();
 		}
+	}
+
+	void sendMissingItemMessage(PlayerEntity player, Item seed) {
+		if (missingItemNotifications)
+			player.sendMessage(
+					Text.translatable(seed.getTranslationKey())
+							.append(Text.translatable(
+									autoSwitch ? "replanter.gui.seed_not_in_hotbar" : "replanter.gui.seed_not_in_hand"))
+							.setStyle(Style.EMPTY.withColor(0xFF0000)),
+					true);
 	}
 
 	static Path configDir = FabricLoader.getInstance().getConfigDir().resolve("replanterplus");
@@ -292,7 +319,12 @@ public class ReplanterPlus implements ModInitializer {
 				sneakToggle = jo.get("sneakToggle").getAsBoolean();
 			if (jo.has("useDelay"))
 				useDelay = jo.get("useDelay").getAsInt();
-
+			if (jo.has("missingItemNotifications"))
+				missingItemNotifications = jo.get("missingItemNotifications").getAsBoolean();
+			if (jo.has("autoSwitch"))
+				autoSwitch = jo.get("autoSwitch").getAsBoolean();
+			if (jo.has("requireSeedHeld"))
+				requireSeedHeld = jo.get("requireSeedHeld").getAsBoolean();
 		} catch (Exception e) {
 			LOGGER.error("Failed to load config", e);
 		}
@@ -304,6 +336,9 @@ public class ReplanterPlus implements ModInitializer {
 		jo.add("enabled", new JsonPrimitive(enabled));
 		jo.add("sneakToggle", new JsonPrimitive(sneakToggle));
 		jo.add("useDelay", new JsonPrimitive(useDelay));
+		jo.add("missingItemNotifications", new JsonPrimitive(missingItemNotifications));
+		jo.add("autoSwitch", new JsonPrimitive(autoSwitch));
+		jo.add("requireSeedHeld", new JsonPrimitive(requireSeedHeld));
 
 		try {
 			Files.createDirectories(configDir);
