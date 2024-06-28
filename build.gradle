@@ -1,6 +1,8 @@
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
 	id 'maven-publish'
+
+	id "com.modrinth.minotaur" version "2.+"
 }
 
 version = project.mod_version
@@ -8,6 +10,20 @@ group = project.maven_group
 
 base {
 	archivesName = project.archives_base_name
+}
+
+modrinth {
+    token = System.getenv("MODRINTH_TOKEN")
+    projectId = "replanter-plus"
+    versionNumber = project.mod_version
+    versionType = "release"
+    uploadFile = jar
+    gameVersions = [project.minecraft_version]
+    loaders = ["fabric", "quilt"]
+    dependencies {
+        required.project "fabric-api"
+        optional.project "modmenu"
+    }
 }
 
 repositories {
