@@ -5,7 +5,7 @@
 Replanter Plus is client-side only mod for harvesting and replanting crops by holding right click.
 
 ## Building
-Make sure you have OpenJDK JRE 17 installed.  
+Make sure you have OpenJDK JRE 21 installed.  
 Update [gradle.properties](/gradle.properties) to a desired Minecraft version if necessary.
 ```
 ./gradlew publishToMavenLocal
