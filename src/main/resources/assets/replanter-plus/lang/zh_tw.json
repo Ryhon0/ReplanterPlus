@@ -1,0 +1,16 @@
+{
+	"category.replanter": "Replanter Plus",
+	"key.replanter.menu": "打開配置畫面",
+	"key.replanter.toggle": "切換重新種植",
+	"replanter.gui.seed_not_in_hotbar": " 不在物品欄",
+	"replanter.gui.seed_not_in_hand": " 不在手上",
+	"replanter.configscreen.enabled": "已啟用",
+	"replanter.configscreen.sneakToggle": "潛行時禁用",
+	"replanter.configscreen.tickDelay": "物品使用延遲",
+	"replanter.configscreen.missingItemNotifications": "物品缺失通知",
+	"replanter.configscreen.autoSwitch": "自動切換",
+	"replanter.configscreen.requireSeedHeld": "需要握住種子",
+	"replanter.configscreen.done": "完成",
+	"replanter.switchbutton.label.on": "開",
+	"replanter.switchbutton.label.off": "關"
+}
