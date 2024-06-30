@@ -18,7 +18,7 @@ modrinth {
     projectId = "replanter-plus"
     versionNumber = project.mod_version
     versionType = "release"
-    uploadFile = jar
+    uploadFile = remapJar
     gameVersions = [project.minecraft_version]
     loaders = ["fabric", "quilt"]
     dependencies {
@@ -29,7 +29,7 @@ modrinth {
 
 task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
     apiToken = System.getenv("CF_TOKEN")
-    def mainFile = upload(1023475, jar)
+    def mainFile = upload(1023475, remapJar)
 	mainFile.changelog = "https://github.com/Ryhon0/ReplanterPlus/commits/master/"
 	mainFile.releaseType = "release"
 	mainFile.addGameVersion(project.minecraft_version)
