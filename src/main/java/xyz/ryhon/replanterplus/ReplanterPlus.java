@@ -31,6 +31,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -271,8 +272,8 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
-		Optional<RegistryEntry.Reference<Enchantment>> fortune = p.getWorld().getRegistryManager()
-				.get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.FORTUNE);
+		Registry<Enchantment> enchantRegistry = p.getWorld().getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT).get();
+		Optional<RegistryEntry.Reference<Enchantment>> fortune = enchantRegistry.getEntry(Enchantments.FORTUNE.getValue());
 		// Server removed the Fortune enchantment????
 		if (!fortune.isPresent())
 			return;
