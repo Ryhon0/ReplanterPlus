@@ -33,6 +33,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 
 public class ReplanterPlus implements ModInitializer {
 	private final MinecraftClient mc;
@@ -50,7 +51,11 @@ public class ReplanterPlus implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		CONFIG.load();
+		registerBinds();
+		registerEventCallbacks();
+	}
 
+	private void registerBinds(){
 		String bindCategory = "category.replanter";
 		KeyBinding menuBind = new KeyBinding("key.replanter.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
 				bindCategory);
@@ -72,7 +77,9 @@ public class ReplanterPlus implements ModInitializer {
 			if (toggleBind.wasPressed())
 				CONFIG.toggleEnabled();
 		});
+	}
 
+	private void registerEventCallbacks(){
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (player instanceof ServerPlayerEntity || useIgnore)
 				return ActionResult.PASS;
@@ -83,36 +90,44 @@ public class ReplanterPlus implements ModInitializer {
 			ClientPlayerEntity p = (ClientPlayerEntity) player;
 			BlockState state = world.getBlockState(hitResult.getBlockPos());
 
-			if (state.getBlock() instanceof CocoaBlock cb) {
-				if (!cb.isFertilizable(world, hitResult.getBlockPos(), state)) {
-					breakAndReplantCocoa(p, state, hitResult);
-					return ActionResult.SUCCESS;
-				} else {
-					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
-					if (h != null) {
-						useIgnore = true;
-						mc.interactionManager.interactBlock(p, h, hitResult);
-						useIgnore = false;
-						return ActionResult.SUCCESS;
-					}
-				}
+			if (state.getBlock() instanceof CocoaBlock cocoaBlock) {
+				return handleCocoaBlock(p, world, state, hitResult, cocoaBlock);
 			} else if (isCrop(state)) {
-				if (isGrown(state)) {
-					breakAndReplant(p, hitResult);
-					return ActionResult.SUCCESS;
-				} else {
-					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
-					if (h != null) {
-						useIgnore = true;
-						mc.interactionManager.interactBlock(p, h, hitResult);
-						useIgnore = false;
-						return ActionResult.SUCCESS;
-					}
-				}
+				return handleCrop(p, state, hitResult);
 			}
 
 			return ActionResult.PASS;
 		});
+	}
+
+	private ActionResult handleCocoaBlock(ClientPlayerEntity player, World world, BlockState state, BlockHitResult hitResult, CocoaBlock cocoaBlock) {
+		if (!cocoaBlock.isFertilizable(world, hitResult.getBlockPos(), state)) {
+			breakAndReplantCocoa(player, state, hitResult);
+			return ActionResult.SUCCESS;
+		}
+	
+		return useBoneMeal(player, hitResult);
+	}
+
+	private ActionResult handleCrop(ClientPlayerEntity player, BlockState state, BlockHitResult hitResult) {
+		if (isGrown(state)) {
+			breakAndReplant(player, hitResult);
+			return ActionResult.SUCCESS;
+		}
+	
+		return useBoneMeal(player, hitResult);
+	}
+
+	private ActionResult useBoneMeal(ClientPlayerEntity player, BlockHitResult hitResult) {
+		Hand hand = findAndEquipSeed(player, Items.BONE_MEAL);
+		if (hand != null) {
+			useIgnore = true;
+			mc.interactionManager.interactBlock(player, hand, hitResult);
+			useIgnore = false;
+			return ActionResult.SUCCESS;
+		}
+
+		return ActionResult.PASS;
 	}
 
 	boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
