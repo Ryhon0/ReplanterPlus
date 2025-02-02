@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -17,11 +16,17 @@ public class Config {
     private final Logger logger;
     private Path configDir;
 	private Path configFile;
+    @Expose
     private boolean enabled;
+    @Expose
 	private boolean sneakToggle;
+    @Expose
 	private int useDelay;
+    @Expose
 	private boolean missingItemNotifications;
+    @Expose
 	private boolean autoSwitch;
+    @Expose
 	private boolean requireSeedHeld;
 
     public Config() {
@@ -42,42 +47,35 @@ public class Config {
 			if (!Files.exists(configFile))
 				return;
 
-			String str = Files.readString(configFile);
-			JsonObject jo = (JsonObject) JsonParser.parseString(str);
+			String json = Files.readString(configFile);
+            Gson gson = new Gson();
+            Config loadedConfig = gson.fromJson(json, Config.class);
+            setConfig(loadedConfig);
 
-			if (jo.has("enabled"))
-				this.setEnabled(jo.get("enabled").getAsBoolean());
-			if (jo.has("sneakToggle"))
-                this.setSneakToggle(jo.get("sneakToggle").getAsBoolean());
-			if (jo.has("useDelay"))
-                this.setUseDelay(jo.get("useDelay").getAsInt());
-			if (jo.has("missingItemNotifications"))
-                this.setMissingItemNotifications(jo.get("missingItemNotifications").getAsBoolean());
-			if (jo.has("autoSwitch"))
-                this.setAutoSwitch(jo.get("autoSwitch").getAsBoolean());
-			if (jo.has("requireSeedHeld"))
-                this.setRequireSeedHeld(jo.get("requireSeedHeld").getAsBoolean());
 		} catch (Exception e) {
 			logger.error("Failed to load config", e);
 		}
 	}
 
     void save() {
-        JsonObject jo = new JsonObject();
-
-        jo.add("enabled", new JsonPrimitive(isEnabled()));
-        jo.add("sneakToggle", new JsonPrimitive(isSneakToggle()));
-        jo.add("useDelay", new JsonPrimitive(getUseDelay()));
-        jo.add("missingItemNotifications", new JsonPrimitive(isMissingItemNotifications()));
-        jo.add("autoSwitch", new JsonPrimitive(isAutoSwitch()));
-        jo.add("requireSeedHeld", new JsonPrimitive(isRequireSeedHeld()));
+        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        String json = gson.toJson(this);
 
         try {
             Files.createDirectories(configDir);
-            Files.writeString(configFile, new Gson().toJson(jo));
+            Files.writeString(configFile, json);
         } catch (Exception e) {
             logger.error("Failed to save config", e);
         }
+    }
+
+    public void setConfig(Config config){
+        setEnabled(config.isEnabled());
+        setSneakToggle(config.isSneakToggle());
+        setUseDelay(config.getUseDelay());
+        setMissingItemNotifications(config.isMissingItemNotifications());
+        setAutoSwitch(config.isAutoSwitch());
+        setRequireSeedHeld(config.isRequireSeedHeld());
     }
 
     public boolean isEnabled(){
