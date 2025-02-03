@@ -13,17 +13,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class ConfigScreen extends Screen {
-	Screen parent;
+	private Screen parent;
 
-	SwitchButton enabledButton;
-	SwitchButton sneakToggleButton;
-	SwitchButton missingItemNotificationsButton;
-	SwitchButton autoSwitchButton;
-	SwitchButton requireSeedHeldButton;
-	SimpleSlider tickDelaySlider;
-	ButtonWidget doneButton;
-
-	public ConfigScreen(Screen parent) {
+	public ConfigScreen(Screen parent){
 		super(Text.empty());
 		this.parent = parent;
 	}
@@ -36,13 +28,13 @@ public class ConfigScreen extends Screen {
 		int buttonHeight = 18;
 		int panelWidth = 256;
 
-		enabledButton = new SwitchButton(
+		SwitchButton enabledButton = new SwitchButton(
 				(width / 2) + (panelWidth / 2) - (buttonWidth), (height / 2) - (buttonHeight * 4),
-				buttonWidth, buttonHeight, ReplanterPlus.enabled) {
+				buttonWidth, buttonHeight, ReplanterPlus.CONFIG.isEnabled()) {
 			@Override
 			public void setToggled(boolean toggled) {
 				super.setToggled(toggled);
-				ReplanterPlus.enabled = toggled;
+				ReplanterPlus.CONFIG.setEnabled(toggled);
 			}
 		};
 		addDrawableChild(enabledButton);
@@ -52,14 +44,14 @@ public class ConfigScreen extends Screen {
 				enabledButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
 		addDrawableChild(t);
 
-		sneakToggleButton = new SwitchButton(
+		SwitchButton sneakToggleButton = new SwitchButton(
 				enabledButton.getX(), enabledButton.getY() + enabledButton.getHeight(),
 				enabledButton.getWidth(), enabledButton.getHeight(),
-				ReplanterPlus.sneakToggle) {
+				ReplanterPlus.CONFIG.isSneakToggle()) {
 			@Override
 			public void setToggled(boolean toggled) {
 				super.setToggled(toggled);
-				ReplanterPlus.sneakToggle = toggled;
+				ReplanterPlus.CONFIG.setSneakToggle(toggled);
 			}
 		};
 		addDrawableChild(sneakToggleButton);
@@ -69,14 +61,14 @@ public class ConfigScreen extends Screen {
 				sneakToggleButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
 		addDrawableChild(t);
 
-		missingItemNotificationsButton = new SwitchButton(
+		SwitchButton missingItemNotificationsButton = new SwitchButton(
 				sneakToggleButton.getX(), sneakToggleButton.getY() + sneakToggleButton.getHeight(),
 				sneakToggleButton.getWidth(), sneakToggleButton.getHeight(),
-				ReplanterPlus.missingItemNotifications) {
+				ReplanterPlus.CONFIG.isMissingItemNotifications()) {
 			@Override
 			public void setToggled(boolean toggled) {
 				super.setToggled(toggled);
-				ReplanterPlus.missingItemNotifications = toggled;
+				ReplanterPlus.CONFIG.setMissingItemNotifications(toggled);
 			}
 		};
 		addDrawableChild(missingItemNotificationsButton);
@@ -86,15 +78,15 @@ public class ConfigScreen extends Screen {
 				missingItemNotificationsButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
 		addDrawableChild(t);
 
-		autoSwitchButton = new SwitchButton(
+		SwitchButton autoSwitchButton = new SwitchButton(
 				missingItemNotificationsButton.getX(),
 				missingItemNotificationsButton.getY() + missingItemNotificationsButton.getHeight(),
 				missingItemNotificationsButton.getWidth(), missingItemNotificationsButton.getHeight(),
-				ReplanterPlus.autoSwitch) {
+				ReplanterPlus.CONFIG.isAutoSwitch()) {
 			@Override
 			public void setToggled(boolean toggled) {
 				super.setToggled(toggled);
-				ReplanterPlus.autoSwitch = toggled;
+				ReplanterPlus.CONFIG.setAutoSwitch(toggled);
 			}
 		};
 		addDrawableChild(autoSwitchButton);
@@ -104,15 +96,15 @@ public class ConfigScreen extends Screen {
 				autoSwitchButton.getY() + (buttonHeight / 2) - (textRenderer.fontHeight / 2));
 		addDrawableChild(t);
 
-		requireSeedHeldButton = new SwitchButton(
+		SwitchButton requireSeedHeldButton = new SwitchButton(
 				autoSwitchButton.getX(),
 				autoSwitchButton.getY() + autoSwitchButton.getHeight(),
 				autoSwitchButton.getWidth(), autoSwitchButton.getHeight(),
-				ReplanterPlus.requireSeedHeld) {
+				ReplanterPlus.CONFIG.isRequireSeedHeld()) {
 			@Override
 			public void setToggled(boolean toggled) {
 				super.setToggled(toggled);
-				ReplanterPlus.requireSeedHeld = toggled;
+				ReplanterPlus.CONFIG.setRequireSeedHeld(toggled);
 			}
 		};
 		addDrawableChild(requireSeedHeldButton);
@@ -127,21 +119,16 @@ public class ConfigScreen extends Screen {
 				requireSeedHeldButton.getY() + buttonHeight);
 		addDrawableChild(t);
 
-		tickDelaySlider = new SimpleSlider(0, 8);
+		SimpleSlider tickDelaySlider = new SimpleSlider(0, 8);
 		tickDelaySlider.setPosition(t.getX(), t.getY() + t.getHeight());
 		tickDelaySlider.setWidth(panelWidth);
 		tickDelaySlider.setHeight(24);
-		tickDelaySlider.setIValue(ReplanterPlus.useDelay);
-		tickDelaySlider.onValue = (Long l) -> {
-			long i = l;
-			ReplanterPlus.useDelay = (int) i;
-		};
+		tickDelaySlider.setIValue(ReplanterPlus.CONFIG.getUseDelay());
+		tickDelaySlider.onValue = (Long l) -> ReplanterPlus.CONFIG.setUseDelay(l.intValue());
 		addDrawableChild(tickDelaySlider);
 		addSelectableChild(tickDelaySlider);
 
-		doneButton = ButtonWidget.builder(Text.translatable("replanter.configscreen.done"), (ButtonWidget b) -> {
-			close();
-		})
+		ButtonWidget doneButton = ButtonWidget.builder(Text.translatable("replanter.configscreen.done"), (ButtonWidget b) -> close())
 				.size(96, 24)
 				.position((width / 2) - (96 / 2), tickDelaySlider.getY() + tickDelaySlider.getHeight() + 8)
 				.build();
@@ -149,10 +136,11 @@ public class ConfigScreen extends Screen {
 		addSelectableChild(doneButton);
 	}
 
-	public static class SimpleSlider extends SliderWidget {
-		long min, max;
+	private class SimpleSlider extends SliderWidget {
+		long min;
+		long max;
 		long iValue;
-		public Consumer<Long> onValue;
+		private Consumer<Long> onValue;
 
 		public SimpleSlider(long min, long max) {
 			super(0, 0, 0, 0, Text.empty(), 0);
@@ -168,7 +156,7 @@ public class ConfigScreen extends Screen {
 
 		@Override
 		protected void applyValue() {
-			iValue = (long) Math.round(value * (max - min)) + min;
+			iValue = Math.round(value * (max - min)) + min;
 			setIValue(iValue);
 
 			updateMessage();
@@ -182,22 +170,19 @@ public class ConfigScreen extends Screen {
 		}
 	}
 
-	public class SwitchButton extends ToggleButtonWidget {
-		private static final ButtonTextures TEXTURES = new ButtonTextures(Identifier.of("widget/button"),
+	private class SwitchButton extends ToggleButtonWidget {
+		private static final ButtonTextures SWITCH_TEXTURES = new ButtonTextures(Identifier.of("widget/button"),
 				Identifier.of("widget/button"), Identifier.of("widget/button_highlighted"));
 
 		public SwitchButton(int x, int y, int width, int height, boolean toggled) {
 			super(x, y, width, height, toggled);
-			setTextures(TEXTURES);
+			setTextures(SWITCH_TEXTURES);
 		}
 
 		@Override
-		protected boolean clicked(double mouseX, double mouseY) {
-			if (super.clicked(mouseX, mouseY)) {
-				setToggled(!toggled);
-				return true;
-			}
-			return false;
+		public void onClick(double mouseX, double mouseY) {
+			super.onClick(mouseX, mouseY);
+			setToggled(!toggled);
 		}
 
 		@Override
@@ -213,6 +198,6 @@ public class ConfigScreen extends Screen {
 	@Override
 	public void close() {
 		client.setScreen(parent);
-		ReplanterPlus.saveConfig();
+		ReplanterPlus.CONFIG.save();
 	}
 }

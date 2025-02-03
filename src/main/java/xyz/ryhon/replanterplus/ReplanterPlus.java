@@ -1,23 +1,13 @@
 package xyz.ryhon.replanterplus;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
 
 import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -35,6 +25,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -42,26 +33,29 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 
 public class ReplanterPlus implements ModInitializer {
-	public static final Logger LOGGER = LoggerFactory.getLogger("Replanter");
-	private static final MinecraftClient mc = MinecraftClient.getInstance();
-	static Boolean useIgnore = false;
+	private final MinecraftClient mc;
+	private boolean useIgnore = false;
 
-	public static Boolean enabled = true;
-	public static Boolean sneakToggle = true;
-	public static int useDelay = 4;
-	public static Boolean missingItemNotifications = true;
-	public static Boolean autoSwitch = true;
-	public static Boolean requireSeedHeld = false;
+	public static final Config CONFIG = new Config();
 
-	int ticks = 0;
-	final int autoSaveTicks = 20 * 60 * 3;
+	private int ticks = 0;
+	private int autoSaveTicks = 20 * 60 * 3;
+
+	public ReplanterPlus(){
+		this.mc = MinecraftClient.getInstance();
+	}
 
 	@Override
 	public void onInitialize() {
-		loadConfig();
+		CONFIG.load();
+		registerBinds();
+		registerEventCallbacks();
+	}
 
+	private void registerBinds(){
 		String bindCategory = "category.replanter";
 		KeyBinding menuBind = new KeyBinding("key.replanter.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
 				bindCategory);
@@ -70,67 +64,77 @@ public class ReplanterPlus implements ModInitializer {
 				bindCategory);
 		KeyBindingHelper.registerKeyBinding(toggleBind);
 
-		ClientTickEvents.END_CLIENT_TICK.register((client) -> {
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			ticks++;
 			if (ticks == autoSaveTicks) {
 				ticks = 0;
-				saveConfig();
+				CONFIG.save();
 			}
 
 			if (menuBind.wasPressed())
 				client.setScreen(new ConfigScreen(null));
 
 			if (toggleBind.wasPressed())
-				enabled = !enabled;
+				CONFIG.toggleEnabled();
 		});
+	}
 
+	private void registerEventCallbacks(){
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (player instanceof ServerPlayerEntity || useIgnore)
 				return ActionResult.PASS;
 
-			if (!enabled || (sneakToggle && player.isSneaking()))
+			if (!CONFIG.isEnabled() || (CONFIG.isSneakToggle() && player.isSneaking()))
 				return ActionResult.PASS;
 
 			ClientPlayerEntity p = (ClientPlayerEntity) player;
 			BlockState state = world.getBlockState(hitResult.getBlockPos());
 
-			if (state.getBlock() instanceof CocoaBlock cb) {
-				if (!cb.isFertilizable(world, hitResult.getBlockPos(), state)) {
-					breakAndReplantCocoa(p, state, hitResult);
-					return ActionResult.SUCCESS;
-				} else {
-					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
-					if (h != null) {
-						useIgnore = true;
-						mc.interactionManager.interactBlock(p, h, hitResult);
-						useIgnore = false;
-						return ActionResult.SUCCESS;
-					}
-				}
+			if (state.getBlock() instanceof CocoaBlock cocoaBlock) {
+				return handleCocoaBlock(p, world, state, hitResult, cocoaBlock);
 			} else if (isCrop(state)) {
-				if (isGrown(state)) {
-					breakAndReplant(p, hitResult);
-					return ActionResult.SUCCESS;
-				} else {
-					Hand h = findAndEquipSeed(player, Items.BONE_MEAL);
-					if (h != null) {
-						useIgnore = true;
-						mc.interactionManager.interactBlock(p, h, hitResult);
-						useIgnore = false;
-						return ActionResult.SUCCESS;
-					}
-				}
+				return handleCrop(p, state, hitResult);
 			}
 
 			return ActionResult.PASS;
 		});
 	}
 
-	Boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
+	private ActionResult handleCocoaBlock(ClientPlayerEntity player, World world, BlockState state, BlockHitResult hitResult, CocoaBlock cocoaBlock) {
+		if (!cocoaBlock.isFertilizable(world, hitResult.getBlockPos(), state)) {
+			breakAndReplantCocoa(player, state, hitResult);
+			return ActionResult.SUCCESS;
+		}
+	
+		return useBoneMeal(player, hitResult);
+	}
+
+	private ActionResult handleCrop(ClientPlayerEntity player, BlockState state, BlockHitResult hitResult) {
+		if (isGrown(state)) {
+			breakAndReplant(player, hitResult);
+			return ActionResult.SUCCESS;
+		}
+	
+		return useBoneMeal(player, hitResult);
+	}
+
+	private ActionResult useBoneMeal(ClientPlayerEntity player, BlockHitResult hitResult) {
+		Hand hand = findAndEquipSeed(player, Items.BONE_MEAL);
+		if (hand != null) {
+			useIgnore = true;
+			mc.interactionManager.interactBlock(player, hand, hitResult);
+			useIgnore = false;
+			return ActionResult.SUCCESS;
+		}
+
+		return ActionResult.PASS;
+	}
+
+	boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
 		if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f)
 			return true;
 
-		if (!autoSwitch)
+		if (!CONFIG.isAutoSwitch())
 			return false;
 
 		int currentSlot = p.getInventory().selectedSlot;
@@ -146,7 +150,7 @@ public class ReplanterPlus implements ModInitializer {
 		return false;
 	}
 
-	Boolean isCrop(BlockState state) {
+	boolean isCrop(BlockState state) {
 		Block block = state.getBlock();
 		if (block instanceof CropBlock)
 			return true;
@@ -160,26 +164,24 @@ public class ReplanterPlus implements ModInitializer {
 		return false;
 	}
 
-	Boolean isGrown(BlockState state) {
+	boolean isGrown(BlockState state) {
 		Block block = state.getBlock();
 		if (block instanceof CropBlock crop)
 			return crop.isMature(state);
 		else if (block instanceof NetherWartBlock)
-			return (Integer) state.get(NetherWartBlock.AGE) == 3;
+			return state.get(NetherWartBlock.AGE) == 3;
 		else if (block instanceof PitcherCropBlock pcb)
 			// Interacting with upper half will reject the use packet
 			// because it's too far away
 			return pcb.isFullyGrown(state) && PitcherCropBlock.isLowerHalf(state);
-		if (block == Blocks.TORCHFLOWER)
-			return true;
 
-		return false;
+		return block == Blocks.TORCHFLOWER;
 	}
 
 	void breakAndReplant(ClientPlayerEntity player, BlockHitResult hit) {
 		Item seed = getSeed(player.getWorld().getBlockState(hit.getBlockPos()).getBlock());
 		Hand h = findAndEquipSeed(player, seed);
-		if (requireSeedHeld && h == null) {
+		if (CONFIG.isRequireSeedHeld() && h == null) {
 			sendMissingItemMessage(player, seed);
 			return;
 		}
@@ -194,7 +196,7 @@ public class ReplanterPlus implements ModInitializer {
 			useIgnore = false;
 		} else
 			sendMissingItemMessage(player, seed);
-		mc.itemUseCooldown = useDelay;
+		mc.itemUseCooldown = CONFIG.getUseDelay();
 	}
 
 	void breakAndReplantCocoa(ClientPlayerEntity p, BlockState state, BlockHitResult hitResult) {
@@ -202,19 +204,18 @@ public class ReplanterPlus implements ModInitializer {
 			Item seed = state.getBlock().asItem();
 			Hand h = findAndEquipSeed(p, seed);
 
-			if (requireSeedHeld && h == null) {
+			if (CONFIG.isRequireSeedHeld() && h == null) {
 				sendMissingItemMessage(p, seed);
 				return;
 			}
 
 			mc.interactionManager.attackBlock(hitResult.getBlockPos(), hitResult.getSide());
 			if (h != null) {
-				Direction dir = (Direction) state.get(CocoaBlock.FACING);
+				Direction dir = state.get(HorizontalFacingBlock.FACING);
 
-				float x, y, z;
-				x = dir.getOffsetX();
-				y = dir.getOffsetY();
-				z = dir.getOffsetZ();
+				float x = dir.getOffsetX();
+				float y = dir.getOffsetY();
+				float z = dir.getOffsetZ();
 				BlockHitResult placeHit = BlockHitResult.createMissed(
 						hitResult.getPos().add(x, y, z), dir.getOpposite(),
 						hitResult.getBlockPos().add(dir.getVector()));
@@ -224,7 +225,7 @@ public class ReplanterPlus implements ModInitializer {
 				useIgnore = false;
 			} else
 				sendMissingItemMessage(p, seed);
-			mc.itemUseCooldown = useDelay;
+			mc.itemUseCooldown = CONFIG.getUseDelay();
 		}
 	}
 
@@ -252,7 +253,7 @@ public class ReplanterPlus implements ModInitializer {
 		if (pi.getStack(PlayerInventory.OFF_HAND_SLOT).isOf(item))
 			return Hand.OFF_HAND;
 
-		if (!autoSwitch)
+		if (!CONFIG.isAutoSwitch())
 			return null;
 
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
@@ -272,7 +273,12 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
-		Registry<Enchantment> enchantRegistry = p.getWorld().getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT).get();
+		Optional<Registry<Enchantment>> enchantRegistryOptional = p.getWorld().getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT);
+		if(enchantRegistryOptional.isEmpty()){
+			return;
+		}
+
+		Registry<Enchantment> enchantRegistry = enchantRegistryOptional.get();
 		Optional<RegistryEntry.Reference<Enchantment>> fortune = enchantRegistry.getEntry(Enchantments.FORTUNE.getValue());
 		// Server removed the Fortune enchantment????
 		if (!fortune.isPresent())
@@ -293,59 +299,12 @@ public class ReplanterPlus implements ModInitializer {
 	}
 
 	void sendMissingItemMessage(PlayerEntity player, Item seed) {
-		if (missingItemNotifications)
-			player.sendMessage(
-					Text.translatable(seed.getTranslationKey())
-							.append(Text.translatable(
-									autoSwitch ? "replanter.gui.seed_not_in_hotbar" : "replanter.gui.seed_not_in_hand"))
-							.setStyle(Style.EMPTY.withColor(0xFF0000)),
-					true);
-	}
-
-	static Path configDir = FabricLoader.getInstance().getConfigDir().resolve("replanterplus");
-	static Path configFile = configDir.resolve("config.json");
-
-	static void loadConfig() {
-		try {
-			Files.createDirectories(configDir);
-			if (!Files.exists(configFile))
-				return;
-
-			String str = Files.readString(configFile);
-			JsonObject jo = (JsonObject) JsonParser.parseString(str);
-
-			if (jo.has("enabled"))
-				enabled = jo.get("enabled").getAsBoolean();
-			if (jo.has("sneakToggle"))
-				sneakToggle = jo.get("sneakToggle").getAsBoolean();
-			if (jo.has("useDelay"))
-				useDelay = jo.get("useDelay").getAsInt();
-			if (jo.has("missingItemNotifications"))
-				missingItemNotifications = jo.get("missingItemNotifications").getAsBoolean();
-			if (jo.has("autoSwitch"))
-				autoSwitch = jo.get("autoSwitch").getAsBoolean();
-			if (jo.has("requireSeedHeld"))
-				requireSeedHeld = jo.get("requireSeedHeld").getAsBoolean();
-		} catch (Exception e) {
-			LOGGER.error("Failed to load config", e);
-		}
-	}
-
-	static void saveConfig() {
-		JsonObject jo = new JsonObject();
-
-		jo.add("enabled", new JsonPrimitive(enabled));
-		jo.add("sneakToggle", new JsonPrimitive(sneakToggle));
-		jo.add("useDelay", new JsonPrimitive(useDelay));
-		jo.add("missingItemNotifications", new JsonPrimitive(missingItemNotifications));
-		jo.add("autoSwitch", new JsonPrimitive(autoSwitch));
-		jo.add("requireSeedHeld", new JsonPrimitive(requireSeedHeld));
-
-		try {
-			Files.createDirectories(configDir);
-			Files.writeString(configFile, new Gson().toJson(jo));
-		} catch (Exception e) {
-			LOGGER.error("Failed to save config", e);
+		if (CONFIG.isMissingItemNotifications()) {
+			MutableText itemName = seed.getDefaultStack().getName().copy();
+			MutableText message = itemName
+				.append(Text.translatable(CONFIG.isAutoSwitch() ? "replanter.gui.seed_not_in_hotbar" : "replanter.gui.seed_not_in_hand"))
+				.setStyle(Style.EMPTY.withColor(0xFF0000));
+			player.sendMessage(message, true);
 		}
 	}
 }
