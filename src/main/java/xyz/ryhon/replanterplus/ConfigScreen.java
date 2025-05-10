@@ -192,8 +192,8 @@ public class ConfigScreen extends Screen {
 		}
 
 		@Override
-		protected boolean clicked(double mouseX, double mouseY) {
-			if (super.clicked(mouseX, mouseY)) {
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			if (super.mouseClicked(mouseX, mouseY, button)) {
 				setToggled(!toggled);
 				return true;
 			}
