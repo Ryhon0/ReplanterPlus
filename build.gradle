@@ -16,7 +16,7 @@ base {
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")
     projectId = "replanter-plus"
-    versionNumber = project.mod_version
+    versionNumber = project.mod_version + "-" + project.minecraft_version
     versionType = "release"
     uploadFile = remapJar
     gameVersions = [project.minecraft_version]
