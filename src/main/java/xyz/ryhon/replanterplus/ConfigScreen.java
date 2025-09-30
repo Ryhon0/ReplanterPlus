@@ -206,7 +206,7 @@ public class ConfigScreen extends Screen {
 			context.drawCenteredTextWithShadow(textRenderer,
 					Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
 					getX() + (width / 2), getY() + (height / 2) - (textRenderer.fontHeight / 2),
-					toggled ? 0x00ff00 : 0xff0000);
+					toggled ? 0xff00ff00 : 0xffff0000);
 		}
 	}
 
