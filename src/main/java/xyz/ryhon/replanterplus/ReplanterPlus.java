@@ -22,6 +22,7 @@ import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.option.KeyBinding.Category;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -39,6 +40,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -62,7 +64,7 @@ public class ReplanterPlus implements ModInitializer {
 	public void onInitialize() {
 		loadConfig();
 
-		String bindCategory = "category.replanter";
+		Category bindCategory = Category.create(Identifier.of("replanter", "replanter"));
 		KeyBinding menuBind = new KeyBinding("key.replanter.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
 				bindCategory);
 		KeyBindingHelper.registerKeyBinding(menuBind);
@@ -127,7 +129,7 @@ public class ReplanterPlus implements ModInitializer {
 	}
 
 	Boolean findInstamineTool(ClientPlayerEntity p, BlockState state, BlockPos pos) {
-		if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f)
+		if (state.calcBlockBreakingDelta(p, p.getEntityWorld(), pos) >= 1f)
 			return true;
 
 		if (!autoSwitch)
@@ -136,7 +138,7 @@ public class ReplanterPlus implements ModInitializer {
 		int currentSlot = p.getInventory().selectedSlot;
 		for (int i = 0; i < PlayerInventory.getHotbarSize(); i++) {
 			p.getInventory().selectedSlot = i;
-			if (state.calcBlockBreakingDelta(p, p.getWorld(), pos) >= 1f) {
+			if (state.calcBlockBreakingDelta(p, p.getEntityWorld(), pos) >= 1f) {
 				mc.interactionManager.syncSelectedSlot();
 				return true;
 			}
@@ -177,7 +179,7 @@ public class ReplanterPlus implements ModInitializer {
 	}
 
 	void breakAndReplant(ClientPlayerEntity player, BlockHitResult hit) {
-		Item seed = getSeed(player.getWorld().getBlockState(hit.getBlockPos()).getBlock());
+		Item seed = getSeed(player.getEntityWorld().getBlockState(hit.getBlockPos()).getBlock());
 		Hand h = findAndEquipSeed(player, seed);
 		if (requireSeedHeld && h == null) {
 			sendMissingItemMessage(player, seed);
@@ -272,7 +274,7 @@ public class ReplanterPlus implements ModInitializer {
 		int slot = -1;
 
 		PlayerInventory pi = p.getInventory();
-		Registry<Enchantment> enchantRegistry = p.getWorld().getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT).get();
+		Registry<Enchantment> enchantRegistry = p.getEntityWorld().getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT).get();
 		Optional<RegistryEntry.Reference<Enchantment>> fortune = enchantRegistry.getEntry(Enchantments.FORTUNE.getValue());
 		// Server removed the Fortune enchantment????
 		if (!fortune.isPresent())
