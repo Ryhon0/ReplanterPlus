@@ -1,6 +1,6 @@
 {
 	"modmenu.descriptionTranslation.replanter-plus": "Modyfikacja klienta umożliwiająca zbieranie plonów oraz sadzenie nasion poprzez trzymanie prawego przycisku myszy.",
-	"category.replanter": "Replanter Plus",
+	"key.category.replanter.replanter": "Replanter Plus",
 	"key.replanter.menu": "Otwórz ekran konfiguracji",
 	"key.replanter.toggle": "Przełącz Replanter Plus",
 	"replanter.gui.seed_not_in_hotbar": " nie jest w hotbarze",

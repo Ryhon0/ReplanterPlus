@@ -1,5 +1,5 @@
 {
-	"category.replanter": "Replanter Plus",
+	"key.category.replanter.replanter": "Replanter Plus",
 	"key.replanter.menu": "打開配置畫面",
 	"key.replanter.toggle": "切換重新種植",
 	"replanter.gui.seed_not_in_hotbar": " 不在物品欄",
