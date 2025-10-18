@@ -1,5 +1,5 @@
 {
-	"category.replanter": "Replanter Plus",
+	"key.category.replanter.replanter": "Replanter Plus",
 	"key.replanter.menu": "Open Config Scren",
 	"key.replanter.toggle": "Toggle Replanter",
 	"replanter.gui.seed_not_in_hotbar": " not in hotbar",

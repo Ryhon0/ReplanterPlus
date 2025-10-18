@@ -5,3 +5,4 @@ accessible    method    net/minecraft/block/PitcherCropBlock    isLowerHalf    (
 accessible    method    net/minecraft/client/network/ClientPlayerInteractionManager    syncSelectedSlot    ()V
 accessible    field    net/minecraft/client/MinecraftClient    itemUseCooldown    I
 accessible    method    net/minecraft/client/gui/widget/SliderWidget    setValue    (D)V
+accessible    field    net/minecraft/entity/player/PlayerInventory    selectedSlot    I

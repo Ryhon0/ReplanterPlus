@@ -2,6 +2,7 @@ package xyz.ryhon.replanterplus;
 
 import java.util.function.Consumer;
 
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
@@ -192,8 +193,8 @@ public class ConfigScreen extends Screen {
 		}
 
 		@Override
-		protected boolean clicked(double mouseX, double mouseY) {
-			if (super.clicked(mouseX, mouseY)) {
+		public boolean mouseClicked(Click click, boolean doubled) {
+			if (super.mouseClicked(click, doubled)) {
 				setToggled(!toggled);
 				return true;
 			}
@@ -206,7 +207,7 @@ public class ConfigScreen extends Screen {
 			context.drawCenteredTextWithShadow(textRenderer,
 					Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
 					getX() + (width / 2), getY() + (height / 2) - (textRenderer.fontHeight / 2),
-					toggled ? 0x00ff00 : 0xff0000);
+					toggled ? 0xff00ff00 : 0xffff0000);
 		}
 	}
 
