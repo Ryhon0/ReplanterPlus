@@ -2,14 +2,18 @@ package xyz.ryhon.replanterplus;
 
 import java.util.function.Consumer;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ButtonWidget.NarrationSupplier;
+import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.TextWidget;
-import net.minecraft.client.gui.widget.ToggleButtonWidget;
+import net.minecraft.client.input.AbstractInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -183,31 +187,34 @@ public class ConfigScreen extends Screen {
 		}
 	}
 
-	public class SwitchButton extends ToggleButtonWidget {
-		private static final ButtonTextures TEXTURES = new ButtonTextures(Identifier.of("widget/button"),
-				Identifier.of("widget/button"), Identifier.of("widget/button_highlighted"));
+	public class SwitchButton extends PressableWidget {
+		public boolean toggled = false;
 
-		public SwitchButton(int x, int y, int width, int height, boolean toggled) {
-			super(x, y, width, height, toggled);
-			setTextures(TEXTURES);
+		public SwitchButton(int i, int j, int k, int l, boolean _toggled) {
+			super(i, j, k, l, Text.empty());
+			toggled = _toggled;
 		}
 
 		@Override
-		public boolean mouseClicked(Click click, boolean doubled) {
-			if (super.mouseClicked(click, doubled)) {
-				setToggled(!toggled);
-				return true;
-			}
-			return false;
-		}
-
-		@Override
-		public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-			super.renderWidget(context, mouseX, mouseY, delta);
+		protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+			drawButton(context);
 			context.drawCenteredTextWithShadow(textRenderer,
-					Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
+					net.minecraft.text.Text.translatable("replanter.switchbutton.label." + (toggled ? "on" : "off")),
 					getX() + (width / 2), getY() + (height / 2) - (textRenderer.fontHeight / 2),
 					toggled ? 0xff00ff00 : 0xffff0000);
+		}
+
+		@Override
+		public void onPress(AbstractInput input) {
+			setToggled(!toggled);
+		}
+
+		public void setToggled(boolean toggled) {
+			this.toggled = toggled;
+		}
+
+		@Override
+		protected void appendClickableNarrations(NarrationMessageBuilder builder) {
 		}
 	}
 
